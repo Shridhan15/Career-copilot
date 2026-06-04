@@ -2,6 +2,9 @@ from typing import List
 from pydantic import BaseModel, Field
 from langchain_groq import ChatGroq
 from src.state import CopilotState
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file, including GROQ_API_KEY
+
 
 class AnalysisOutput(BaseModel):
     """The structured schema expected from the Gap Analyzer LLM."""
@@ -15,7 +18,7 @@ def gap_analyzer_node(state: CopilotState) -> dict:
     """
     # 1. Initialize ChatGroq with a fast, reasoning-capable model
     # llama3-70b-8192 or llama-3.1-70b-versatile are ideal for analytical constraints
-    llm = ChatGroq(model="llama-3.1-70b-versatile", temperature=0.0)
+    llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.0)
     
     # Force structured output mapped to our local schema
     structured_llm = llm.with_structured_output(AnalysisOutput)

@@ -12,7 +12,7 @@ def resume_parser_node(state: CopilotState) -> dict:
 
     # Initialize the LLM
     # We use temperature=0.0 because parsing requires absolute accuracy, not creativity.
-    llm = ChatGroq(model="llama-3.1-70b-versatile", temperature=0.0)
+    llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0.0)
 
     # Bind the structured output schema directly to the model
     structured_llm = llm.with_structured_output(ExtractedProfile)

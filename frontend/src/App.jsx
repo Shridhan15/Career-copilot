@@ -2,74 +2,43 @@ import React, { useState } from "react";
 import Navbar from "./components/Navbar";
 import UploadProfile from "./pages/UploadProfile";
 import Dashboard from "./pages/Dashboard";
-import { Sparkles } from "lucide-react";
 
 export default function App() {
-  const [currentView, setCurrentView] = useState("upload"); // Views: 'upload' | 'loading' | 'dashboard'
-  const [rawText, setRawText] = useState("");
-  const [targetRole, setTargetRole] = useState("AI Engineer");
+  const [currentView, setCurrentView] = useState("upload"); // 'upload' | 'dashboard'
+
+  // App.jsx only holds the final results to pass to the Dashboard
   const [analysisData, setAnalysisData] = useState(null);
+  const [globalTargetRole, setGlobalTargetRole] = useState("");
 
-  const handleAnalyzeResume = (e) => {
-    e.preventDefault();
-    if (!rawText.trim()) return;
+  // This function is passed to the Upload page.
+  // The Upload page calls this when the API returns successfully.
+  const handleAnalysisSuccess = (data, role) => {
+    setAnalysisData(data);
+    setGlobalTargetRole(role);
+    setCurrentView("dashboard");
+  };
 
-    setCurrentView("loading");
-
-    // Simulating dynamic API payload extraction
-    setTimeout(() => {
-      setAnalysisData({
-        readiness_score: 55.5,
-        extracted_profile: {
-          skills: ["Python", "React", "Node.js", "MongoDB", "REST APIs"],
-        },
-        skill_gaps: [
-          "Deep Learning Frameworks (PyTorch/TensorFlow)",
-          "Transformers & Attention Mechanisms",
-          "Retrieval-Augmented Generation (RAG)",
-          "MLOps & Model Deployment Pipelines",
-        ],
-      });
-      setCurrentView("dashboard");
-    }, 1500);
+  const handleReset = () => {
+    setAnalysisData(null);
+    setCurrentView("upload");
   };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased">
-      <Navbar targetRole={currentView === "dashboard" ? targetRole : null} />
+      <Navbar
+        targetRole={currentView === "dashboard" ? globalTargetRole : null}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {currentView === "upload" && (
-          <UploadProfile
-            rawText={rawText}
-            setRawText={setRawText}
-            targetRole={targetRole}
-            setTargetRole={setTargetRole}
-            onAnalyze={handleAnalyzeResume}
-            isAnalyzing={false}
-          />
-        )}
-
-        {currentView === "loading" && (
-          <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[400px] animate-pulse max-w-2xl mx-auto">
-            <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 mb-4 animate-bounce">
-              <Sparkles className="w-6 h-6" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">
-              Agents At Work
-            </h3>
-            <p className="text-sm text-slate-500 max-w-sm mt-1 mx-auto">
-              Cross-referencing parsed resume skills with industry expectations
-              and compiling granular skill metrics...
-            </p>
-          </div>
+          <UploadProfile onAnalysisComplete={handleAnalysisSuccess} />
         )}
 
         {currentView === "dashboard" && analysisData && (
           <Dashboard
             analysisData={analysisData}
-            targetRole={targetRole}
-            onBack={() => setCurrentView("upload")}
+            targetRole={globalTargetRole}
+            onBack={handleReset}
           />
         )}
       </main>
