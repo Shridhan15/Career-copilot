@@ -16,53 +16,44 @@ export default function ProfileScan({
   const [rawText, setRawText] = useState("");
   const [targetRole, setTargetRole] = useState("AI Engineer");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [apiError, setApiError] = useState(null);
 
   const triggerAnalysis = async (e) => {
     e.preventDefault();
     if (!rawText.trim()) return;
+
     setIsAnalyzing(true);
+    setApiError(null);
 
     try {
-      // Real API connection (uncomment when testing backend execution)
-      /*
-      const response = await fetch('http://localhost:8000/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resume_text: rawText, target_role: targetRole })
+      // 🚀 Actual Live API Pipeline Execution
+      const response = await fetch("http://localhost:8000/api/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          resume_text: rawText,
+          target_role: targetRole,
+        }),
       });
+
+      if (!response.ok) {
+        const errorDetail = await response.json().catch(() => ({}));
+        throw new Error(
+          errorDetail.detail || "Failed to analyze profile mapping.",
+        );
+      }
+
       const data = await response.json();
+
+      // Synchronize state down to parent provider (App.jsx memory)
       setAnalysisData(data);
       setGlobalTargetRole(targetRole);
-      */
-
-      // Mock Fallback Simulation
-      setTimeout(() => {
-        const mockData = {
-          readiness_score: 64.2,
-          extracted_profile: {
-            skills: ["Python", "LangGraph", "FastAPI", "JavaScript"],
-          },
-          skill_gaps: [
-            "Deep Learning Theory",
-            "PyTorch Framework",
-            "MLOps Infrastructure",
-          ],
-          active_roadmap: {
-            "Month 1": [
-              {
-                topic: "Deep Learning Foundations",
-                resources: ["PyTorch Docs"],
-                suggested_project: "Build MLP from scratch",
-              },
-            ],
-          },
-        };
-        setAnalysisData(mockData);
-        setGlobalTargetRole(targetRole);
-        setIsAnalyzing(false);
-      }, 1500);
     } catch (err) {
-      console.error(err);
+      console.error("API Communication Fault:", err);
+      setApiError(err.message || "Unable to connect to the AI engine backend.");
+    } finally {
       setIsAnalyzing(false);
     }
   };
@@ -92,6 +83,7 @@ export default function ProfileScan({
               Run Automated Resume Audit
             </h3>
           </div>
+
           <form onSubmit={triggerAnalysis} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
@@ -100,7 +92,7 @@ export default function ProfileScan({
               <select
                 value={targetRole}
                 onChange={(e) => setTargetRole(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
               >
                 <option value="AI Engineer">AI Engineer</option>
                 <option value="Cloud Architect">Cloud Architect</option>
@@ -109,6 +101,7 @@ export default function ProfileScan({
                 </option>
               </select>
             </div>
+
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Raw Text Dump
@@ -117,9 +110,17 @@ export default function ProfileScan({
                 value={rawText}
                 onChange={(e) => setRawText(e.target.value)}
                 placeholder="Paste resume payload contents here..."
-                className="w-full h-60 bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono resize-none focus:ring-2 focus:ring-blue-500/20"
+                className="w-full h-60 bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-mono resize-none focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
               />
             </div>
+
+            {apiError && (
+              <div className="bg-red-50 border border-red-200 text-red-600 font-medium text-xs px-4 py-3 rounded-xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{apiError}</span>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={!rawText.trim()}
@@ -151,14 +152,20 @@ export default function ProfileScan({
               Assets
             </h4>
             <div className="flex flex-wrap gap-1.5">
-              {analysisData.extracted_profile?.skills.map((s, i) => (
-                <span
-                  key={i}
-                  className="bg-emerald-50 text-emerald-700 border border-emerald-100 font-medium text-xs px-2.5 py-1 rounded-lg"
-                >
-                  {s}
+              {analysisData.extracted_profile?.skills?.length > 0 ? (
+                analysisData.extracted_profile.skills.map((s, i) => (
+                  <span
+                    key={i}
+                    className="bg-emerald-50 text-emerald-700 border border-emerald-100 font-medium text-xs px-2.5 py-1 rounded-lg"
+                  >
+                    {s}
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs text-slate-400 italic">
+                  No matching skills detected for this target milestone.
                 </span>
-              ))}
+              )}
             </div>
           </div>
 
@@ -168,7 +175,7 @@ export default function ProfileScan({
               Gaps
             </h4>
             <div className="space-y-1.5">
-              {analysisData.skill_gaps.map((g, i) => (
+              {analysisData.skill_gaps?.map((g, i) => (
                 <div
                   key={i}
                   className="bg-slate-50 text-slate-700 border border-slate-200/60 rounded-xl px-3 py-2 text-xs font-medium"
