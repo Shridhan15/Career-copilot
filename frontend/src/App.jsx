@@ -1,47 +1,56 @@
 import React, { useState } from "react";
 import Navbar from "./components/Navbar";
-import UploadProfile from "./pages/UploadProfile";
-import Dashboard from "./pages/Dashboard";
+import Sidebar from "./components/Sidebar";
+import Home from "./pages/Home";
+import ProfileScan from "./pages/ProfileScan";
+import RoadmapBuilder from "./pages/RoadmapBuilder";
+import InterviewPrep from "./pages/InterviewPrep";
 
 export default function App() {
-  const [currentView, setCurrentView] = useState("upload"); // 'upload' | 'dashboard'
+  const [activePage, setActivePage] = useState("home"); // Views: 'home' | 'scan' | 'roadmap' | 'interview'
 
-  // App.jsx only holds the final results to pass to the Dashboard
+  // High-Level global states passed to specific page child nodes
   const [analysisData, setAnalysisData] = useState(null);
   const [globalTargetRole, setGlobalTargetRole] = useState("");
 
-  // This function is passed to the Upload page.
-  // The Upload page calls this when the API returns successfully.
-  const handleAnalysisSuccess = (data, role) => {
-    setAnalysisData(data);
-    setGlobalTargetRole(role);
-    setCurrentView("dashboard");
-  };
-
-  const handleReset = () => {
-    setAnalysisData(null);
-    setCurrentView("upload");
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased">
-      <Navbar
-        targetRole={currentView === "dashboard" ? globalTargetRole : null}
-      />
+      <Navbar targetRole={analysisData ? globalTargetRole : null} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {currentView === "upload" && (
-          <UploadProfile onAnalysisComplete={handleAnalysisSuccess} />
-        )}
+      <div className="flex max-w-7xl mx-auto">
+        {/* Left Hand Navigation Engine */}
+        <Sidebar activePage={activePage} setActivePage={setActivePage} />
 
-        {currentView === "dashboard" && analysisData && (
-          <Dashboard
-            analysisData={analysisData}
-            targetRole={globalTargetRole}
-            onBack={handleReset}
-          />
-        )}
-      </main>
+        {/* Central Workspace Viewport Panel Routing */}
+        <main className="flex-1 px-8 py-10 overflow-y-auto">
+          {activePage === "home" && (
+            <Home
+              setActivePage={setActivePage}
+              analysisData={analysisData}
+              targetRole={globalTargetRole}
+            />
+          )}
+
+          {activePage === "scan" && (
+            <ProfileScan
+              analysisData={analysisData}
+              setAnalysisData={setAnalysisData}
+              setGlobalTargetRole={setGlobalTargetRole}
+            />
+          )}
+
+          {activePage === "roadmap" && (
+            <RoadmapBuilder
+              analysisData={analysisData}
+              setAnalysisData={setAnalysisData}
+              globalTargetRole={globalTargetRole}
+              setGlobalTargetRole={setGlobalTargetRole}
+            />
+          )}
+
+          {activePage === "interview" && <InterviewPrep />}
+        </main>
+      </div>
     </div>
   );
 }
