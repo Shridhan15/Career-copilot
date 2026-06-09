@@ -1,69 +1,128 @@
-import React from "react";
-import { CheckCircle2, AlertCircle, ArrowLeft } from "lucide-react";
-import MetricCard from "../components/MetricCard";
+import React, { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { useUser } from "@clerk/clerk-react";
 
-export default function Dashboard({ analysisData, targetRole, onBack }) {
+// Import our new components
+import AnalysisForm from "../components/dashboard/AnalysisForm";
+import AnalysisHistoryList from "../components/dashboard/AnalysisHistoryList";
+import AnalysisModal from "../components/dashboard/AnalysisModal";
+import LandingPage from "../components/dashboard/LandingPage";
+
+export default function Dashboard() {
+  const { isLoaded, isSignedIn, user } = useUser();
+
+  // State Management
+  const [analysisHistory, setAnalysisHistory] = useState([]);
+  const [isFetchingInitial, setIsFetchingInitial] = useState(true);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Modal State
+  const [selectedAnalysis, setSelectedAnalysis] = useState(null);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      setIsFetchingInitial(false);
+      return;
+    }
+
+    const fetchExistingData = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:8000/api/user/${user.id}/state`,
+        );
+        if (response.ok) {
+          // The backend now returns a true array of history!
+          const historyArray = await response.json();
+          console.log("Raw history data from backend:", historyArray);
+
+          if (historyArray.length > 0) {
+            setAnalysisHistory(historyArray);
+            console.log("Fetched existing analysis history:", historyArray);
+          }
+        }
+      } catch (error) {
+        console.log("No previous data found.");
+      } finally {
+        setIsFetchingInitial(false);
+      }
+    };
+
+    fetchExistingData();
+  }, [isLoaded, isSignedIn, user]);
+
+  const handleAnalyze = async (targetRole, resumeText) => {
+    setIsAnalyzing(true);
+    try {
+      const response = await fetch("http://localhost:8000/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: user.id,
+          resume_text: resumeText,
+          target_role: targetRole,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Analysis failed");
+      const data = await response.json();
+
+      // Add the new analysis to the top of the history list
+      setAnalysisHistory((prev) => [data, ...prev]);
+
+      // Automatically open the modal to show the new results
+      setSelectedAnalysis(data);
+    } catch (error) {
+      console.error(error);
+      alert("Analysis failed. Please try again.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // State 1: Loading
+  if (!isLoaded || isFetchingInitial) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-500">
+        <Loader2 className="w-8 h-8 animate-spin mb-4 text-blue-600" />
+        <p className="font-medium">Loading workspace...</p>
+      </div>
+    );
+  }
+
+  // State 2: Logged Out Landing Page (Keep your existing landing page code here)
+  if (!isSignedIn) {
+    return <LandingPage />;
+  }
+
+  // State 3: Logged In Dashboard
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Navigation Controls */}
-      <button
-        onClick={onBack}
-        className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Modify Input Profile</span>
-      </button>
-
-      {/* Analytical Visual Topography */}
-      <MetricCard score={analysisData.readiness_score} />
-
-      {/* Extracted Existing Foundations */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-        <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-          Verified Extracted Competencies
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {analysisData.extracted_profile?.skills.map((skill, index) => (
-            <span
-              key={index}
-              className="bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-medium text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5"
-            >
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-              {skill}
-            </span>
-          ))}
-        </div>
+    <div className="max-w-4xl mx-auto py-8 animate-fade-in">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+          New Analysis
+        </h1>
+        <p className="text-sm text-slate-500 mt-1">
+          Run a fresh multi-agent scan to update your current trajectory.
+        </p>
       </div>
 
-      {/* Discovered Knowledge Faults */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-        <div className="mb-1">
-          <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-amber-500" />
-            Identified Strategic Skill Gaps
-          </h3>
-          <p className="text-xs text-slate-500 ml-7">
-            The multi-agent critic isolated these core fields required to
-            confidently pass production screening parameters for a `{targetRole}
-            ` role.
-          </p>
-        </div>
+      {/* 1. The Persistent Form */}
+      <AnalysisForm onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
 
-        <div className="space-y-2 mt-4 ml-7">
-          {analysisData.skill_gaps.map((gap, index) => (
-            <div
-              key={index}
-              className="bg-amber-50/60 border border-amber-200/40 rounded-xl px-4 py-3 flex items-start gap-3"
-            >
-              <div className="bg-amber-100 p-1 rounded-lg text-amber-600 mt-0.5">
-                <AlertCircle className="w-3.5 h-3.5" />
-              </div>
-              <span className="text-sm font-medium text-slate-700">{gap}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* 2. The History List */}
+      <AnalysisHistoryList
+        history={analysisHistory}
+        onViewDetails={setSelectedAnalysis}
+      />
+
+      {/* 3. The Modal Overlay */}
+      <AnalysisModal
+        isOpen={!!selectedAnalysis}
+        data={selectedAnalysis}
+        onClose={() => setSelectedAnalysis(null)}
+      />
     </div>
   );
 }

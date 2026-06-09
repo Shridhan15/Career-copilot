@@ -1,56 +1,25 @@
-import React, { useState } from "react";
-import Navbar from "./components/Navbar";
-import Sidebar from "./components/Sidebar";
-import Home from "./pages/Home";
-import ProfileScan from "./pages/ProfileScan";
-import RoadmapBuilder from "./pages/RoadmapBuilder";
-import InterviewPrep from "./pages/InterviewPrep";
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout";
+import Dashboard from "./pages/Dashboard";
+import UserProfile from "./pages/UserProfile";
 
 export default function App() {
-  const [activePage, setActivePage] = useState("home"); // Views: 'home' | 'scan' | 'roadmap' | 'interview'
-
-  // High-Level global states passed to specific page child nodes
-  const [analysisData, setAnalysisData] = useState(null);
-  const [globalTargetRole, setGlobalTargetRole] = useState("");
-
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased">
-      <Navbar targetRole={analysisData ? globalTargetRole : null} />
+    <Router>
+      <Routes>
+        {/* The Layout component wraps every route inside this block */}
+        <Route path="/" element={<Layout />}>
+          {/* Index means this loads at the exact root path ("/") */}
+          <Route index element={<Dashboard />} />
 
-      <div className="flex max-w-7xl mx-auto">
-        {/* Left Hand Navigation Engine */}
-        <Sidebar activePage={activePage} setActivePage={setActivePage} />
+          {/* This loads at "/profile" */}
+          <Route path="profile" element={<UserProfile />} />
 
-        {/* Central Workspace Viewport Panel Routing */}
-        <main className="flex-1 px-8 py-10 overflow-y-auto">
-          {activePage === "home" && (
-            <Home
-              setActivePage={setActivePage}
-              analysisData={analysisData}
-              targetRole={globalTargetRole}
-            />
-          )}
-
-          {activePage === "scan" && (
-            <ProfileScan
-              analysisData={analysisData}
-              setAnalysisData={setAnalysisData}
-              setGlobalTargetRole={setGlobalTargetRole}
-            />
-          )}
-
-          {activePage === "roadmap" && (
-            <RoadmapBuilder
-              analysisData={analysisData}
-              setAnalysisData={setAnalysisData}
-              globalTargetRole={globalTargetRole}
-              setGlobalTargetRole={setGlobalTargetRole}
-            />
-          )}
-
-          {activePage === "interview" && <InterviewPrep />}
-        </main>
-      </div>
-    </div>
+          {/* You will add your mock interview page here later */}
+          {/* <Route path="interview" element={<MockInterview />} /> */}
+        </Route>
+      </Routes>
+    </Router>
   );
 }
