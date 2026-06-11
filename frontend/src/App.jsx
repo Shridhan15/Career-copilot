@@ -1,22 +1,26 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
-import Dashboard from "./pages/Dashboard";
+import Overview from "./pages/Overview";
+import NewAnalysis from "./pages/NewAnalysis";
 import UserProfile from "./pages/UserProfile";
 
 export default function App() {
   return (
     <Router>
       <Routes>
-        {/* The Layout component wraps every route inside this block */}
         <Route path="/" element={<Layout />}>
-          {/* Index means this loads at the exact root path ("/") */}
-          <Route index element={<Dashboard />} />
+          {/* Dashboard Home */}
+          <Route index element={<Overview />} />
 
-          {/* This loads at "/profile" */}
+          {/* The new dedicated Analysis route */}
+          <Route path="analyze" element={<NewAnalysis />} />
+
+          {/* Profile Route */}
           <Route path="profile" element={<UserProfile />} />
 
-          {/* You will add your mock interview page here later */}
+          {/* Placeholders for your future modules */}
+          {/* <Route path="roadmap" element={<ActiveRoadmap />} /> */}
           {/* <Route path="interview" element={<MockInterview />} /> */}
         </Route>
       </Routes>
