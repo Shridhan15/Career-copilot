@@ -3,17 +3,13 @@ import { Save, Loader2 } from "lucide-react";
 import { useUser } from "@clerk/clerk-react";
 import PersonalInfoSection from "../components/profile/PersonalInfoSection";
 import EducationSection from "../components/profile/EducationSection";
+import ResumeBankSection from "../components/profile/ResumeBankSection";
 
 export default function UserProfile() {
   const { isLoaded, isSignedIn, user } = useUser();
 
   const [profileData, setProfileData] = useState({
-    personalInfo: {
-      fullName: "",
-      email: "",
-      phone: "",
-      location: "",
-    },
+    personalInfo: { fullName: "", email: "", phone: "", location: "" },
     education: [
       {
         id: Date.now(),
@@ -23,6 +19,7 @@ export default function UserProfile() {
         endYear: "",
       },
     ],
+    resumes: [],
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -39,9 +36,14 @@ export default function UserProfile() {
         );
 
         if (response.ok) {
-          // 1. User has saved data in MongoDB. Load it.
+          // 1. User has saved data in MongoDB. Load it safely.
           const data = await response.json();
-          setProfileData(data);
+
+          // THE FIX: Merge the database data, but force an empty array if resumes is missing
+          setProfileData({
+            ...data,
+            resumes: data.resumes || [],
+          });
         } else {
           // 2. No MongoDB data found (Brand new user).
           // Pre-fill the form using Clerk's authentication payload!
@@ -49,7 +51,7 @@ export default function UserProfile() {
             ...prev,
             personalInfo: {
               ...prev.personalInfo,
-              fullName: user.fullName || "",
+              fullName: user.fullName || "Shridhan", // Using your preferred name
               email: user.primaryEmailAddress?.emailAddress || "",
             },
           }));
@@ -103,6 +105,30 @@ export default function UserProfile() {
     setProfileData((prev) => ({
       ...prev,
       education: prev.education.filter((edu) => edu.id !== id),
+    }));
+  };
+
+  // --- Handlers for Resume Bank ---
+  const handleResumeChange = (id, field, value) => {
+    setProfileData((prev) => ({
+      ...prev,
+      resumes: prev.resumes.map((res) =>
+        res.id === id ? { ...res, [field]: value } : res,
+      ),
+    }));
+  };
+
+  const addResume = () => {
+    setProfileData((prev) => ({
+      ...prev,
+      resumes: [...prev.resumes, { id: Date.now(), title: "", content: "" }],
+    }));
+  };
+
+  const removeResume = (id) => {
+    setProfileData((prev) => ({
+      ...prev,
+      resumes: prev.resumes.filter((res) => res.id !== id),
     }));
   };
 
@@ -172,6 +198,13 @@ export default function UserProfile() {
           onChange={handleEducationChange}
           onAdd={addEducation}
           onRemove={removeEducation}
+        />
+
+        <ResumeBankSection
+          resumes={profileData.resumes || []}
+          onChange={handleResumeChange}
+          onAdd={addResume}
+          onRemove={removeResume}
         />
 
         <div className="flex justify-end pt-4">

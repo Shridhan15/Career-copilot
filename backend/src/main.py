@@ -39,11 +39,16 @@ class EducationSchema(BaseModel):
     startYear: str
     endYear: str
 
+class ResumeSchema(BaseModel):
+    id: int
+    title: str
+    content: str
+
 class UserProfilePayload(BaseModel):
     personalInfo: PersonalInfoSchema
     education: List[EducationSchema]
-
-
+    resumes: List[ResumeSchema] = []
+    
 # ==========================================
 # 2. State API Endpoints (AI Analysis Data)
 # ==========================================
@@ -139,3 +144,5 @@ async def analyze_resume(request: AnalyzeRequest):
     except Exception as e:
         print(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+    
+
